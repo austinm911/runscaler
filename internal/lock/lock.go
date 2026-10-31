@@ -13,7 +13,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const DefaultPath = "/tmp/runner.lock"
+// DefaultPath is the machine-wide lock. RUNSCALER_LOCK_FILE overrides it so one
+// machine can run one controller per remote Docker daemon, each with its own
+// capacity limit.
+var DefaultPath = lockPath()
+
+func lockPath() string {
+	if p := os.Getenv("RUNSCALER_LOCK_FILE"); p != "" {
+		return p
+	}
+	return "/tmp/runner.lock"
+}
 
 var ErrAlreadyRunning = errors.New("another runner is already running")
 
