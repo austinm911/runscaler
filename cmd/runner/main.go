@@ -362,6 +362,13 @@ func runManager(ctx context.Context, cfg config.Config, drain <-chan struct{}) e
 			if ss.IsTart() || pulled[pullKey] {
 				continue
 			}
+			// An image the machine already holds is used as is. This lets a fleet build its runner
+			// image locally under a content tag, which no registry serves.
+			if _, err := dockerClients[ss.Docker.Socket].ImageInspect(ctx, ss.RunnerImage); err == nil {
+				logger.Info("Using local runner image", slog.String("image", ss.RunnerImage))
+				pulled[pullKey] = true
+				continue
+			}
 			logger.Info("Pulling runner image", slog.String("image", ss.RunnerImage), slog.String("platform", ss.Docker.Platform))
 			pullCtx, pullCancel := context.WithTimeout(ctx, 30*time.Minute)
 			pullOptions := dockerclient.ImagePullOptions{}
